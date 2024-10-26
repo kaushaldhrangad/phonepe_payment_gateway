@@ -39,7 +39,6 @@ This project taught me How to integrate a PhonePe payment integration. Also, thi
    MERCHANT_ID=<your_merchant_id>
    SALT_KEY=<your_salt_key>
    PORT=8000
-PORT=8000
 
 4. Start the Server and Client:
 
