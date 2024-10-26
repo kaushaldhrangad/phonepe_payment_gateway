@@ -4,25 +4,27 @@ import React from "react";
 const App = () => {
   let data = {
     name: "Kaushal",
-    amount: 1,
+    amount: 100,
     number: "1234567890",
     MID: "MID" + Date.now(),
     transactionId: "transactionId" + Date.now(),
   };
 
-  const handleClick = async () => {
-    try {
-      let res = await axios
-        .post("http://localhost:8000/payment", data)
-        .then((res) => {
-          console.log(res);
-        })
-        .catch((err) => {
-          console.log("Error in axios" + err);
-        });
-    } catch (error) {
-      console.log(error);
-    }
+  const handleClick = async (e) => {
+    e.preventDefault();
+
+    let res = await axios
+      .post("http://localhost:8000/payment", { ...data })
+      .then((res) => {
+        console.log(res);
+        if (res.data && res.data.data.instrumentResponse.redirectInfo.url) {
+          window.location.href =
+            res.data.data.instrumentResponse.redirectInfo.url;
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   };
   return (
     <section class="text-gray-600 body-font overflow-hidden">

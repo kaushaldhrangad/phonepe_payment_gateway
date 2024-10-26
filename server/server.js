@@ -6,10 +6,11 @@ const crypto = require("crypto");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false }));
 const port = process.env.PORT || 8000;
 
 app.get("/", (req, res) => {
@@ -50,12 +51,12 @@ app.post("/payment", async (req, res) => {
     const sha256 = crypto.createHash("sha256").update(string).digest("hex");
     const checksum = sha256 + "###" + keyindex;
 
-    const prod_url =  "https://api.phonepe.com/apis/hermes/pg/v1/pay"; //=> this is the production URL
-    // const test_url = `https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay`
+    // const prod_url = "https://api.phonepe.com/apis/hermes/pg/v1/pay"; //=> this is the production URL
+    const prod_url = `https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay`
 
     const options = {
       method: "POST",
-      // url: test_url,
+      url: prod_url,
       headers: {
         accept: "application/json",
         "Content-Type": "application/json",
@@ -66,7 +67,7 @@ app.post("/payment", async (req, res) => {
       },
       timeout: 10000, // Timeout after 10 seconds
     };
-     axios
+    axios
       .request(options)
       .then(function (response) {
         console.log(response.data);
@@ -84,9 +85,45 @@ app.post("/payment", async (req, res) => {
   } catch (error) {
     res.status(500).send({
       message: error.message,
-      success: false
-  })
+      success: false,
+    });
   }
+});
+
+app.post("/status", async (req, res) => {
+  let merchantTransactionId = req.query.id;
+  let merchantId = merchant_id;
+
+  const keyindex = 1;
+  const string = `/pg/v1/pay/${merchantId}/${merchantTransactionId}` + salt_key;
+  const sha256 = crypto.createHash("sha256").update(string).digest("hex");
+  const checksum = sha256 + "###" + keyindex;
+
+  const options = {
+    method: "GET",
+    url: `https://api.phonepe.com/apis/hermes/pg/v1/pay/${merchantId}/${merchantTransactionId}`,
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      "X-VERIFY": checksum,
+      "X-MERCHANT-ID": `${merchantId}`,
+    },
+  };
+
+  axios
+    .request(options)
+    .then(async (response) => {
+      if (response.data.success === true) {
+        const url = `http://localhost:5173/success`;
+        return res.redirect(url);
+      } else {
+        const url = `http://localhost:5173/failure`;
+        return res.redirect(url);
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+    });
 });
 
 app.listen(port, () => {
